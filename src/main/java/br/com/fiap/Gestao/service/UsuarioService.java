@@ -2,6 +2,8 @@ package br.com.fiap.Gestao.service;
 
 import br.com.fiap.Gestao.convertordto.UsuarioMapper;
 import br.com.fiap.Gestao.dto.UsuarioRequestDTO;
+import br.com.fiap.Gestao.exception.UsuarioDuplicadoException;
+import br.com.fiap.Gestao.exception.UsuarioNotFoundException;
 import br.com.fiap.Gestao.model.Usuario;
 import br.com.fiap.Gestao.repository.UsuarioRepository;
 import org.slf4j.Logger;
@@ -39,7 +41,7 @@ public class UsuarioService {
     public Usuario getById(Long id){
         log.debug("Buscando usuario por id: {}", id);
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario não encontrada para o id " + id));
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario não encontrada para o id " + id));
 
     }
 
@@ -57,7 +59,7 @@ public class UsuarioService {
     @Transactional
     public Usuario update(Long id, UsuarioRequestDTO dto){
         Usuario existente = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario nao encontrado para o id " + id));
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario nao encontrado para o id " + id));
 
         validarUnicidade(dto.email(), dto.loginUsername(), id);
 
@@ -71,21 +73,21 @@ public class UsuarioService {
                 .filter(usuario -> idAtual == null || !usuario.getId().equals(idAtual))
                 .ifPresent(usuario -> {
                     log.warn("Tentativa de salvar usuario com email ja existente: {}", email);
-                    throw new RuntimeException("Email ja cadastrado");
+                    throw new UsuarioDuplicadoException("Email ja cadastrado");
                 });
 
         usuarioRepository.findByLoginUsername(loginUsername)
                 .filter(usuario -> idAtual == null || !usuario.getId().equals(idAtual))
                 .ifPresent(usuario -> {
                     log.warn("Tentativa de salvar usuario com login ja existente: {}", loginUsername);
-                    throw new RuntimeException("LoginUsername ja cadastrado");
+                    throw new UsuarioDuplicadoException("LoginUsername ja cadastrado");
                 });
     }
 
     public void delete(Long id){
         if (!usuarioRepository.existsById(id)){
             log.warn("Tentativa de deletar usuario inexistente com id: {}", id);
-            throw new RuntimeException("Usuario não encontrado para o id " + id);
+            throw new UsuarioNotFoundException("Usuario não encontrado para o id " + id);
         }
         usuarioRepository.deleteById(id);
     }
