@@ -1,6 +1,8 @@
 package br.com.fiap.Gestao.controller;
 
+import br.com.fiap.Gestao.dto.TrocarSenhaRequestDTO;
 import br.com.fiap.Gestao.dto.UsuarioRequestDTO;
+import br.com.fiap.Gestao.dto.UsuarioUpdateDTO;
 import br.com.fiap.Gestao.model.Usuario;
 import br.com.fiap.Gestao.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +39,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
+    @Operation(summary = "Buscar usuários por nome", description = "Retorna uma lista de usuários que correspondem ao nome informado (sem expor senha)")
+    @GetMapping("/search/nome")
+    public ResponseEntity<List<UsuarioUpdateDTO>> searchByNome(@RequestParam String nome) {
+        return ResponseEntity.ok(usuarioService.searchByNome(nome));
+    }
+
     @Operation(summary = "Criar Usuarios", description = "Cria um novo usuário com as informações fornecidas no corpo da requisição. Os tipos de usuarios permitidos são: DONO_RESTAURANTE, CLIENTE. O email e loginUsername devem ser únicos no sistema. Se um usuário com o mesmo email ou loginUsername já existir, retorna um erro 409.")
     @PostMapping
     public ResponseEntity<Void> create(@Valid @RequestBody UsuarioRequestDTO usuarioRequestDTO) {
@@ -44,11 +52,20 @@ public class UsuarioController {
         return ResponseEntity.status(201).build();
     }
 
-    @Operation(summary = "Alterar usuario por ID", description = "realiza a atualização de um usuário existente com as informações fornecidas no corpo da requisição. Os tipos de usuarios permitidos são: DONO_RESTAURANTE, CLIENTE. Se um usuário com o mesmo email ou loginUsername já existir, retorna um erro 409.")
+    @Operation(summary = "Atualizar dados do usuario", description = "Atualiza apenas as informações cadastrais do usuário, sem alterar a senha.")
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(@Valid @PathVariable("id") Long id, @RequestBody UsuarioRequestDTO usuarioRequestDTO) {
-        this.usuarioService.update(id, usuarioRequestDTO);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Usuario> update(@PathVariable("id") Long id, @Valid @RequestBody UsuarioUpdateDTO usuarioUpdateDTO) {
+        return ResponseEntity.ok(usuarioService.update(id, usuarioUpdateDTO));
+    }
+
+    @Operation(summary = "Trocar senha do usuario", description = "Atualiza apenas a senha do usuário.")
+    @PatchMapping("/{id}/senha")
+    public ResponseEntity<Void> trocarSenha(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody TrocarSenhaRequestDTO trocarSenhaRequestDTO
+    ) {
+        usuarioService.trocarSenha(id, trocarSenhaRequestDTO);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Deleta usuário por ID", description = "Deleta um usuário específico pelo ID informado. Se o usuário não existir, retorna um erro 404.")

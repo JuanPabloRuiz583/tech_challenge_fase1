@@ -1,7 +1,10 @@
 package br.com.fiap.Gestao.service;
 
 import br.com.fiap.Gestao.convertordto.UsuarioMapper;
+import br.com.fiap.Gestao.dto.TrocarSenhaRequestDTO;
 import br.com.fiap.Gestao.dto.UsuarioRequestDTO;
+import br.com.fiap.Gestao.dto.UsuarioUpdateDTO;
+import br.com.fiap.Gestao.exception.SenhaInvalidaException;
 import br.com.fiap.Gestao.exception.UsuarioDuplicadoException;
 import br.com.fiap.Gestao.exception.UsuarioNotFoundException;
 import br.com.fiap.Gestao.model.Usuario;
@@ -15,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
@@ -34,30 +39,29 @@ public class UsuarioService {
         if (page < 1) page = 1;
         if (size < 1) size = 10;
 
-        Pageable pageable = PageRequest.of(page - 1, size); // JPA usa pagina zero-based
+        Pageable pageable = PageRequest.of(page - 1, size);
         return usuarioRepository.findAll(pageable).getContent();
     }
 
-    public Usuario getById(Long id){
+    public Usuario getById(Long id) {
         log.debug("Buscando usuario por id: {}", id);
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new UsuarioNotFoundException("Usuario não encontrada para o id " + id));
-
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario nao encontrado para o id " + id));
     }
 
     @Transactional
-    public Usuario create(UsuarioRequestDTO dto){
+    public void create(UsuarioRequestDTO dto) {
         validarUnicidade(dto.email(), dto.loginUsername(), null);
 
         Usuario usuario = usuarioMapper.toEntity(dto);
         usuario.setId(null);
         usuario.setDataUltimaAlteracao(LocalDateTime.now());
 
-        return usuarioRepository.save(usuario);
+        usuarioRepository.save(usuario);
     }
 
     @Transactional
-    public Usuario update(Long id, UsuarioRequestDTO dto){
+    public Usuario update(Long id, UsuarioUpdateDTO dto) {
         Usuario existente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new UsuarioNotFoundException("Usuario nao encontrado para o id " + id));
 
@@ -68,27 +72,59 @@ public class UsuarioService {
         return usuarioRepository.save(existente);
     }
 
+    @Transactional
+    public void trocarSenha(Long id, TrocarSenhaRequestDTO dto) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario nao encontrado para o id " + id));
+
+        if (!usuario.getSenha().equals(dto.senhaAtual())) {
+            throw new SenhaInvalidaException("Senha atual invalida");
+        }
+
+        if (!dto.novaSenha().equals(dto.confirmacaoNovaSenha())) {
+            throw new SenhaInvalidaException("Nova senha e confirmacao estao diferentes");
+        }
+
+        usuario.setSenha(dto.novaSenha());
+        usuario.setDataUltimaAlteracao(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+    }
+
     private void validarUnicidade(String email, String loginUsername, Long idAtual) {
         usuarioRepository.findByEmail(email)
-                .filter(usuario -> idAtual == null || !usuario.getId().equals(idAtual))
+                .filter(usuario -> !Objects.equals(usuario.getId(), idAtual))
                 .ifPresent(usuario -> {
                     log.warn("Tentativa de salvar usuario com email ja existente: {}", email);
                     throw new UsuarioDuplicadoException("Email ja cadastrado");
                 });
 
         usuarioRepository.findByLoginUsername(loginUsername)
-                .filter(usuario -> idAtual == null || !usuario.getId().equals(idAtual))
+                .filter(usuario -> !Objects.equals(usuario.getId(), idAtual))
                 .ifPresent(usuario -> {
                     log.warn("Tentativa de salvar usuario com login ja existente: {}", loginUsername);
                     throw new UsuarioDuplicadoException("LoginUsername ja cadastrado");
                 });
     }
 
-    public void delete(Long id){
-        if (!usuarioRepository.existsById(id)){
+    public void delete(Long id) {
+        if (!usuarioRepository.existsById(id)) {
             log.warn("Tentativa de deletar usuario inexistente com id: {}", id);
-            throw new UsuarioNotFoundException("Usuario não encontrado para o id " + id);
+            throw new UsuarioNotFoundException("Usuario nao encontrado para o id " + id);
         }
         usuarioRepository.deleteById(id);
+    }
+
+    public List<UsuarioUpdateDTO> searchByNome(String nome) {
+        String nomeNormalizado = nome == null ? "" : nome.trim();
+        log.debug("Buscando usuarios por nome: {}", nomeNormalizado);
+
+        if (nomeNormalizado.isEmpty()) {
+            return List.of();
+        }
+
+        return usuarioRepository.findByNomeContainingIgnoreCase(nomeNormalizado)
+                .stream()
+                .map(usuarioMapper::toUpdateDTO)
+                .collect(Collectors.toList());
     }
 }

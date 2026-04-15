@@ -1,6 +1,7 @@
 package br.com.fiap.Gestao.handler;
 
 import br.com.fiap.Gestao.dto.ApiErrorDTO;
+import br.com.fiap.Gestao.exception.SenhaInvalidaException;
 import br.com.fiap.Gestao.exception.UsuarioDuplicadoException;
 import br.com.fiap.Gestao.exception.UsuarioNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +46,21 @@ public class GlobalExceptionHandler {
                 null
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(SenhaInvalidaException.class)
+    public ResponseEntity<ApiErrorDTO> handleSenhaInvalida(
+            SenhaInvalidaException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorDTO body = new ApiErrorDTO(
+                LocalDateTime.now(),
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
