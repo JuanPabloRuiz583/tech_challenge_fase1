@@ -1,16 +1,16 @@
 package br.com.fiap.Gestao.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-import br.com.fiap.Gestao.handler.GlobalExceptionHandler;
 import br.com.fiap.Gestao.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
@@ -21,10 +21,20 @@ public class AuthFilter extends OncePerRequestFilter{
     private TokenService tokenService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        System.out.println("passou pelo filtro");
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/v1/login")
+                || path.startsWith("/api/v1/usuarios")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui");
+    }
 
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
         var header = request.getHeader("Authorization");
         if(header == null){
             filterChain.doFilter(request, response);
@@ -33,8 +43,8 @@ public class AuthFilter extends OncePerRequestFilter{
 
         if(!header.startsWith("Bearer ")){
             response.setStatus(401);
-            response.getWriter().write(""" 
-                {"message": "Header deve iniciar com Bearer"} 
+            response.getWriter().write("""
+                {"message": "Header deve iniciar com Bearer"}
             """);
             return;
         }
