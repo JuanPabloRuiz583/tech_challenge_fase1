@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +29,12 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, UsuarioMapper usuarioMapper) {
+    public UsuarioService(UsuarioRepository usuarioRepository, UsuarioMapper usuarioMapper, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioMapper = usuarioMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<Usuario> getAll(int page, int size) {
@@ -77,7 +80,7 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new UsuarioNotFoundException("Usuario nao encontrado para o id " + id));
 
-        if (!usuario.getSenha().equals(dto.senhaAtual())) {
+        if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha())) {
             throw new SenhaInvalidaException("Senha atual invalida");
         }
 
@@ -85,7 +88,7 @@ public class UsuarioService {
             throw new SenhaInvalidaException("Nova senha e confirmacao estao diferentes");
         }
 
-        usuario.setSenha(dto.novaSenha());
+        usuario.setSenha(passwordEncoder.encode(dto.novaSenha()));
         usuario.setDataUltimaAlteracao(LocalDateTime.now());
         usuarioRepository.save(usuario);
     }

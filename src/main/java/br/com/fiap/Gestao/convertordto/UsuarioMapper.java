@@ -4,10 +4,14 @@ import br.com.fiap.Gestao.dto.UsuarioRequestDTO;
 import br.com.fiap.Gestao.dto.UsuarioUpdateDTO;
 import br.com.fiap.Gestao.model.Endereco;
 import br.com.fiap.Gestao.model.Usuario;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UsuarioMapper {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public Usuario toEntity(UsuarioRequestDTO dto) {
         Usuario usuario = new Usuario();
@@ -19,7 +23,7 @@ public class UsuarioMapper {
         usuario.setNome(dto.nome());
         usuario.setEmail(dto.email());
         usuario.setLoginUsername(dto.loginUsername());
-        usuario.setSenha(dto.senha());
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
         usuario.setTipoUsuario(dto.tipoUsuario());
         usuario.setEndereco(mapEndereco(dto.endereco()));
     }

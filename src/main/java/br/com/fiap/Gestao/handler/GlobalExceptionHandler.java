@@ -1,6 +1,7 @@
 package br.com.fiap.Gestao.handler;
 
 import br.com.fiap.Gestao.dto.ApiErrorDTO;
+import br.com.fiap.Gestao.exception.CredenciaisInvalidasException;
 import br.com.fiap.Gestao.exception.SenhaInvalidaException;
 import br.com.fiap.Gestao.exception.UsuarioDuplicadoException;
 import br.com.fiap.Gestao.exception.UsuarioNotFoundException;
@@ -61,6 +62,21 @@ public class GlobalExceptionHandler {
                 null
         );
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(CredenciaisInvalidasException.class)
+    public ResponseEntity<ApiErrorDTO> handleCredenciaisInvalidas(
+            CredenciaisInvalidasException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorDTO body = new ApiErrorDTO(
+                LocalDateTime.now(),
+                ex.getMessage(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
