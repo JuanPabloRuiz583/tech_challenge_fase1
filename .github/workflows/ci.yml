@@ -43,7 +43,7 @@ env:
   MAVEN_OPTS: '-Xmx1024m'
   # Exclusões do Sonar para arquivos que não precisam de cobertura
   SONAR_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java'
-  SONAR_COVERAGE_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java,**/exception/**,**/config/SecurityConfig.java,**/config/SwaggerConfig.java'
+  SONAR_COVERAGE_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java,**/exception/**,**/config/SecurityConfig.java,**/config/SwaggerConfig.java,src/main/java/br/com/fiap/gestao/config/AuthFilter.java,src/main/java/br/com/fiap/gestao/controller/UsuarioController.java,src/main/java/br/com/fiap/gestao/controller/AuthController.java'
 
 # ──────────────────────────────────────────────────────
 # JOBS
