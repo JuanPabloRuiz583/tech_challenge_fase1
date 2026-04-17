@@ -243,33 +243,32 @@ jobs:
             
             # Temporarily disable exit on error to capture the actual error
             set +e
-            PR_OUTPUT=$(gh pr create \
+            PR_URL=$(gh pr create \
               --base develop \
               --head "$BRANCH_NAME" \
               --title "🔀 ${CLEAN_TITLE}" \
-              --body "$PR_BODY" \
-              --json number,url 2>&1)
+              --body "$PR_BODY" 2>&1)
             PR_EXIT_CODE=$?
             set -e
 
             if [ $PR_EXIT_CODE -eq 0 ]; then
-              PR_NUMBER=$(echo "$PR_OUTPUT" | jq -r '.number' 2>/dev/null || echo "")
-              PR_URL=$(echo "$PR_OUTPUT" | jq -r '.url' 2>/dev/null || echo "")
-              
-              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ] && [ "$PR_NUMBER" != "" ]; then
+              # PR_URL should contain the URL of the created PR
+              if [[ "$PR_URL" =~ https://github.com/.*/pull/[0-9]+ ]]; then
+                PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
                 echo "✅ PR #${PR_NUMBER} created successfully: $PR_URL"
                 
                 # Try to add labels if they exist (ignore errors)
+                set +e
                 gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
                 gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
+                set -e
               else
-                echo "⚠️ PR created but failed to parse response:"
-                echo "$PR_OUTPUT"
+                echo "✅ PR created successfully: $PR_URL"
               fi
             else
               echo "❌ Failed to create PR (exit code: $PR_EXIT_CODE)"
               echo "Error output:"
-              echo "$PR_OUTPUT"
+              echo "$PR_URL"
               
               # Additional diagnostics
               echo ""
