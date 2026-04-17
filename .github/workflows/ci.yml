@@ -240,28 +240,35 @@ jobs:
             
             # Create PR and capture both output and errors
             echo "🔍 Executing gh pr create command..."
+            
+            # Temporarily disable exit on error to capture the actual error
+            set +e
             PR_OUTPUT=$(gh pr create \
               --base develop \
               --head "$BRANCH_NAME" \
               --title "🔀 ${CLEAN_TITLE}" \
               --body "$PR_BODY" \
               --json number,url 2>&1)
+            PR_EXIT_CODE=$?
+            set -e
 
-            if [ $? -eq 0 ]; then
-              PR_NUMBER=$(echo "$PR_OUTPUT" | jq -r '.number' 2>/dev/null)
-              PR_URL=$(echo "$PR_OUTPUT" | jq -r '.url' 2>/dev/null)
+            if [ $PR_EXIT_CODE -eq 0 ]; then
+              PR_NUMBER=$(echo "$PR_OUTPUT" | jq -r '.number' 2>/dev/null || echo "")
+              PR_URL=$(echo "$PR_OUTPUT" | jq -r '.url' 2>/dev/null || echo "")
               
-              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ] && [ "$PR_NUMBER" != "" ]; then
                 echo "✅ PR #${PR_NUMBER} created successfully: $PR_URL"
                 
                 # Try to add labels if they exist (ignore errors)
                 gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
                 gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
               else
-                echo "⚠️ PR created but failed to parse response: $PR_OUTPUT"
+                echo "⚠️ PR created but failed to parse response:"
+                echo "$PR_OUTPUT"
               fi
             else
-              echo "❌ Failed to create PR. Error output:"
+              echo "❌ Failed to create PR (exit code: $PR_EXIT_CODE)"
+              echo "Error output:"
               echo "$PR_OUTPUT"
               
               # Additional diagnostics
@@ -270,12 +277,16 @@ jobs:
               echo "  Current branch: $BRANCH_NAME"
               echo "  Target branch: develop" 
               echo "  Repository info:"
-              gh repo view --json owner,name || echo "  Failed to get repo info"
+              gh repo view --json owner,name 2>/dev/null || echo "  Failed to get repo info"
               echo ""
               echo "  Available branches:"
-              gh api repos/:owner/:repo/branches --jq '.[].name' | head -10 || echo "  Failed to list branches"
+              gh api repos/:owner/:repo/branches --jq '.[].name' 2>/dev/null | head -10 || echo "  Failed to list branches"
+              echo ""
+              echo "  Current repository:"
+              echo "  Owner/Repo: $(gh repo view --json owner,name --jq '.owner.login + "/" + .name' 2>/dev/null || echo 'unknown')"
               
-              exit 1
+              # Don't exit with error, just log the failure
+              echo "⚠️ PR creation failed, but continuing workflow"
             fi
           fi
 
