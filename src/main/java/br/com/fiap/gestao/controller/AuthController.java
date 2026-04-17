@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     @Autowired
-    private AuthService authService;
+    AuthService authService;
 
     @Autowired
-    private TokenService tokenService;
+    TokenService tokenService;
 
     @PostMapping("/login")
     @Operation(

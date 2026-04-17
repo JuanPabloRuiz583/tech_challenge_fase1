@@ -41,6 +41,9 @@ env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
   MAVEN_OPTS: '-Xmx1024m'
+  # Exclusões do Sonar para arquivos que não precisam de cobertura
+  SONAR_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java'
+  SONAR_COVERAGE_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java,**/exception/**,**/config/**'
 
 # ──────────────────────────────────────────────────────
 # JOBS
