@@ -29,6 +29,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Global permissions
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+  checks: read
+
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
@@ -173,6 +181,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
+      repository-projects: read
+      metadata: read
 
     steps:
       - name: "☁️ Checkout source"
@@ -270,19 +281,36 @@ jobs:
               echo "Error output:"
               echo "$PR_URL"
               
-              # Additional diagnostics
-              echo ""
-              echo "🔍 Diagnostic information:"
-              echo "  Current branch: $BRANCH_NAME"
-              echo "  Target branch: develop" 
-              echo "  Repository info:"
-              gh repo view --json owner,name 2>/dev/null || echo "  Failed to get repo info"
-              echo ""
-              echo "  Available branches:"
-              gh api repos/:owner/:repo/branches --jq '.[].name' 2>/dev/null | head -10 || echo "  Failed to list branches"
-              echo ""
-              echo "  Current repository:"
-              echo "  Owner/Repo: $(gh repo view --json owner,name --jq '.owner.login + "/" + .name' 2>/dev/null || echo 'unknown')"
+              # Check if it's a permissions issue
+              if [[ "$PR_URL" == *"is not permitted to create"* ]] || [[ "$PR_URL" == *"GraphQL"* ]]; then
+                echo ""
+                echo "🔒 This appears to be a repository permissions issue."
+                echo "   To enable automatic PR creation, you need to configure your repository:"
+                echo ""
+                echo "   📋 SOLUTION: Repository Settings"
+                echo "   1. Go to: https://github.com/${GITHUB_REPOSITORY}/settings/actions"
+                echo "   2. Scroll to 'Workflow permissions'"
+                echo "   3. Select 'Read and write permissions'"
+                echo "   4. Check 'Allow GitHub Actions to create and approve pull requests'"
+                echo "   5. Click 'Save'"
+                echo ""
+                echo "   Alternative: You can manually create the PR using this link:"
+                echo "   🔗 https://github.com/${GITHUB_REPOSITORY}/compare/develop...${BRANCH_NAME}?quick_pull=1"
+                echo ""
+              else
+                echo ""
+                echo "🔍 Diagnostic information:"
+                echo "  Current branch: $BRANCH_NAME"
+                echo "  Target branch: develop" 
+                echo "  Repository info:"
+                gh repo view --json owner,name 2>/dev/null || echo "  Failed to get repo info"
+                echo ""
+                echo "  Available branches:"
+                gh api repos/:owner/:repo/branches --jq '.[].name' 2>/dev/null | head -10 || echo "  Failed to list branches"
+                echo ""
+                echo "  Current repository:"
+                echo "  Owner/Repo: $(gh repo view --json owner,name --jq '.owner.login + "/" + .name' 2>/dev/null || echo 'unknown')"
+              fi
               
               # Don't exit with error, just log the failure
               echo "⚠️ PR creation failed, but continuing workflow"
