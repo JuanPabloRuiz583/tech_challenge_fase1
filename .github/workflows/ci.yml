@@ -28,6 +28,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Make mvnw executable
+      run: chmod +x ./mvnw
+
     - name: Build and test with Maven
       run: ./mvnw clean verify -B
 
@@ -79,6 +82,9 @@ jobs:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
+
+    - name: Make mvnw executable
+      run: chmod +x ./mvnw
 
     - name: Build with coverage
       run: ./mvnw clean verify -B
