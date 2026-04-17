@@ -1,6 +1,6 @@
 package br.com.fiap.Gestao.handler;
 
-import br.com.fiap.Gestao.dto.ApiErrorDTO;
+import br.com.fiap.Gestao.dto.ProblemDetailDTO;
 import br.com.fiap.Gestao.exception.CredenciaisInvalidasException;
 import br.com.fiap.Gestao.exception.SenhaInvalidaException;
 import br.com.fiap.Gestao.exception.UsuarioDuplicadoException;
@@ -13,74 +13,85 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    
+    private static final String API_ERROR_TYPE = "https://api.gestao.com/erros";
+
     @ExceptionHandler(UsuarioNotFoundException.class)
-    public ResponseEntity<ApiErrorDTO> handleUsuarioNotFound(
+    public ResponseEntity<ProblemDetailDTO> handleUsuarioNotFound(
             UsuarioNotFoundException ex,
             HttpServletRequest request
     ) {
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/usuario-nao-encontrado",
+                "Usuário não encontrado",
+                HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
                 request.getRequestURI(),
+                Instant.now(),
                 null
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(UsuarioDuplicadoException.class)
-    public ResponseEntity<ApiErrorDTO> handleUsuarioDuplicado(
+    public ResponseEntity<ProblemDetailDTO> handleUsuarioDuplicado(
             UsuarioDuplicadoException ex,
             HttpServletRequest request
     ) {
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/usuario-duplicado",
+                "Usuário duplicado",
+                HttpStatus.CONFLICT.value(),
                 ex.getMessage(),
-                HttpStatus.CONFLICT.getReasonPhrase(),
                 request.getRequestURI(),
+                Instant.now(),
                 null
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(SenhaInvalidaException.class)
-    public ResponseEntity<ApiErrorDTO> handleSenhaInvalida(
+    public ResponseEntity<ProblemDetailDTO> handleSenhaInvalida(
             SenhaInvalidaException ex,
             HttpServletRequest request
     ) {
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/senha-invalida",
+                "Senha inválida",
+                HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 request.getRequestURI(),
+                Instant.now(),
                 null
         );
         return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(CredenciaisInvalidasException.class)
-    public ResponseEntity<ApiErrorDTO> handleCredenciaisInvalidas(
+    public ResponseEntity<ProblemDetailDTO> handleCredenciaisInvalidas(
             CredenciaisInvalidasException ex,
             HttpServletRequest request
     ) {
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/credenciais-invalidas",
+                "Credenciais inválidas",
+                HttpStatus.UNAUTHORIZED.value(),
                 ex.getMessage(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 request.getRequestURI(),
+                Instant.now(),
                 null
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorDTO> handleValidation(
+    public ResponseEntity<ProblemDetailDTO> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
@@ -89,26 +100,30 @@ public class GlobalExceptionHandler {
             fieldErrors.put(err.getField(), err.getDefaultMessage());
         }
 
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
-                "Erro de validacao",
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/validacao-falhou",
+                "Erro de validação",
+                HttpStatus.BAD_REQUEST.value(),
+                "Um ou mais campos contêm valores inválidos",
                 request.getRequestURI(),
+                Instant.now(),
                 fieldErrors
         );
         return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorDTO> handleGeneric(
+    public ResponseEntity<ProblemDetailDTO> handleGeneric(
             Exception ex,
             HttpServletRequest request
     ) {
-        ApiErrorDTO body = new ApiErrorDTO(
-                LocalDateTime.now(),
-                "Ocorreu um erro inesperado",
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+        ProblemDetailDTO body = new ProblemDetailDTO(
+                API_ERROR_TYPE + "/erro-interno",
+                "Erro interno do servidor",
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.",
                 request.getRequestURI(),
+                Instant.now(),
                 null
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
