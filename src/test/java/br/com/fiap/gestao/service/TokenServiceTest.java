@@ -9,22 +9,27 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@TestPropertySource(properties = {"jwt.secret=test-secret-key-for-unit-tests-only"})
 @DisplayName("TokenService Tests")
 class TokenServiceTest {
 
+    @Autowired
     private TokenService tokenService;
     private Usuario usuario;
     private String secret;
 
     @BeforeEach
     void setUp() {
-        tokenService = new TokenService();
-        secret = "secret";
+        secret = "test-secret-key-for-unit-tests-only";
 
         Endereco endereco = new Endereco();
         endereco.setRua("Rua Teste");

@@ -7,12 +7,19 @@ import br.com.fiap.gestao.model.TipoUsuario;
 import br.com.fiap.gestao.model.Usuario;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TokenService {
     private static final long EXPIRATION_MINUTES = 120;
-    private final Algorithm algorithm = Algorithm.HMAC256("secret");
+    
+    @Value("${jwt.secret:default-secret-key-change-in-production}")
+    private String jwtSecret;
+    
+    private Algorithm getAlgorithm() {
+        return Algorithm.HMAC256(jwtSecret);
+    }
 
     public Token createToken(Usuario user) {
         Instant expiresAt = Instant.now().plusSeconds(EXPIRATION_MINUTES * 60);
@@ -22,13 +29,13 @@ public class TokenService {
                 .withClaim("email", user.getEmail())
                 .withClaim("role", user.getTipoUsuario().toString())
                 .withExpiresAt(expiresAt)
-                .sign(algorithm);
+                .sign(getAlgorithm());
 
         return new Token(jwt, user.getEmail());
     }
 
     public Usuario getUsuarioFromToken(String jwt) {
-        var jwtVerified = JWT.require(algorithm).build().verify(jwt);
+        var jwtVerified = JWT.require(getAlgorithm()).build().verify(jwt);
 
         Usuario usuario = new Usuario();
         usuario.setId(Long.valueOf(jwtVerified.getSubject()));
