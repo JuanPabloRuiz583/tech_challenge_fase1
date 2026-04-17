@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Técnico - Gestão API</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .page { page-break-after: always; padding: 40px; max-width: 1000px; margin: 0 auto; }
+        .cover { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; text-align: center; }
+        .cover h1 { font-size: 48px; margin: 20px 0; color: #1a73e8; }
+        .cover h2 { font-size: 28px; margin: 10px 0; color: #666; }
+        .cover p { font-size: 16px; margin: 10px 0; color: #999; }
+        h1 { color: #1a73e8; font-size: 36px; margin: 30px 0 20px 0; border-bottom: 3px solid #1a73e8; padding-bottom: 10px; }
+        h2 { color: #2d5aa8; font-size: 28px; margin: 25px 0 15px 0; margin-top: 30px; }
+        h3 { color: #3d6bb8; font-size: 20px; margin: 15px 0 10px 0; }
+        h4 { color: #555; font-size: 16px; margin: 12px 0 8px 0; }
+        p { margin: 10px 0; text-align: justify; }
+        ul, ol { margin: 10px 0 10px 30px; }
+        li { margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #1a73e8; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .code { background-color: #f4f4f4; border: 1px solid #ddd; padding: 12px; margin: 10px 0; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 13px; border-radius: 4px; }
+        .endpoint { background-color: #e8f0fe; border-left: 4px solid #1a73e8; padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .endpoint strong { color: #1a73e8; }
+        .section { margin: 20px 0; }
+        .toc { background-color: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .toc h2 { margin-top: 0; }
+        .toc ul { margin: 10px 0 10px 20px; }
+        .toc a { text-decoration: none; color: #1a73e8; }
+        .toc a:hover { text-decoration: underline; }
+        .footer { text-align: center; color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; }
+        .spec-table { width: 100%; margin: 10px 0; }
+        .spec-table tr { background-color: white; }
+        .spec-table td { padding: 8px; border: 1px solid #ddd; }
+        .spec-table td:first-child { background-color: #f0f0f0; font-weight: bold; width: 25%; }
+        @media print {
+            body { margin: 0; }
+            .page { page-break-after: always; }
+            h1 { page-break-after: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- CAPA -->
+<div class="page cover">
+    <h1>🍽️ Gestão API</h1>
+    <h2>Relatório Técnico - Tech Challenge Fase 1</h2>
+    <p>Sistema de Gestão de Usuários para Restaurantes</p>
+    <p style="margin-top: 40px; color: #666;">
+        <strong>Desenvolvedor:</strong> Wesley<br>
+        <strong>Data:</strong> 17 de Abril de 2026<br>
+        <strong>Instituição:</strong> FIAP<br>
+        <strong>Versão:</strong> 0.0.1-SNAPSHOT
+    </p>
+</div>
+
+<!-- ÍNDICE -->
+<div class="page">
+    <h1>Índice</h1>
+    <div class="toc">
+        <ol>
+            <li><a href="#intro">Introdução</a></li>
+            <li><a href="#arch">Arquitetura da Aplicação</a></li>
+            <li><a href="#entities">Modelagem de Entidades</a></li>
+            <li><a href="#endpoints">Endpoints da API</a></li>
+            <li><a href="#swagger">Documentação Swagger</a></li>
+            <li><a href="#postman">Coleção Postman</a></li>
+            <li><a href="#database">Banco de Dados</a></li>
+            <li><a href="#docker">Execução com Docker</a></li>
+            <li><a href="#tech">Stack Tecnológico</a></li>
+            <li><a href="#conclusion">Conclusão</a></li>
+        </ol>
+    </div>
+</div>
+
+<!-- SEÇÃO 1: INTRODUÇÃO -->
+<div class="page">
+    <h1 id="intro">1. Introdução</h1>
+
+    <h2>Objetivo</h2>
+    <p>Desenvolver um backend robusto e completo para um sistema de gestão de restaurantes, permitindo que múltiplos estabelecimentos gerenciem eficientemente suas operações através de uma plataforma única e compartilhada. A Fase 1 concentra-se na gestão de usuários com autenticação JWT e validações robustas.</p>
+
+    <h2>Escopo</h2>
+    <ul>
+        <li>Gestão completa de usuários (CRUD)</li>
+        <li>Autenticação e autorização com JWT</li>
+        <li>Validação robusta de dados</li>
+        <li>Integração com PostgreSQL</li>
+        <li>Documentação com Swagger/OpenAPI</li>
+        <li>Suporte a Docker e Docker Compose</li>
+    </ul>
+
+    <h2>Requisitos Obrigatórios Atendidos</h2>
+    <ul>
+        <li>✅ Cadastro, atualização e exclusão de usuários</li>
+        <li>✅ Troca de senha em endpoint separado</li>
+        <li>✅ Atualização de dados sem alterar senha</li>
+        <li>✅ Registro de data da última alteração</li>
+        <li>✅ Busca de usuários por nome</li>
+        <li>✅ Garantia de unicidade de email</li>
+        <li>✅ Validação de login obrigatória</li>
+        <li>✅ Versionamento de API (/api/v1/)</li>
+        <li>✅ Dois tipos de usuário (Cliente, Dono de Restaurante)</li>
+        <li>✅ Padrão ProblemDetail (RFC 7807)</li>
+        <li>✅ Documentação com Swagger</li>
+        <li>✅ Banco de dados relacional (PostgreSQL)</li>
+        <li>✅ Dockerização completa</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 2: ARQUITETURA -->
+<div class="page">
+    <h1 id="arch">2. Arquitetura da Aplicação</h1>
+
+    <h2>Visão Geral</h2>
+    <p>A aplicação segue uma arquitetura em camadas (Layered Architecture) com separação clara de responsabilidades, facilitando manutenção, testes e evolução do código.</p>
+
+    <h2>Diagrama de Camadas</h2>
+    <div class="code">
+API Request
+    ↓
+Controller (UsuarioController, AuthController)
+    ↓
+Service (UsuarioService, AuthService, TokenService)
+    ↓
+Repository (UsuarioRepository - Spring Data JPA)
+    ↓
+Database (PostgreSQL)
+    ↓
+Response (DTOs)
+    </div>
+
+    <h2>Componentes Principais</h2>
+    <table>
+        <tr>
+            <th>Camada</th>
+            <th>Componentes</th>
+            <th>Responsabilidade</th>
+        </tr>
+        <tr>
+            <td><strong>Controller</strong></td>
+            <td>UsuarioController<br>AuthController</td>
+            <td>Receber requisições HTTP, validar entrada, coordenar chamadas à service</td>
+        </tr>
+        <tr>
+            <td><strong>Service</strong></td>
+            <td>UsuarioService<br>AuthService<br>TokenService</td>
+            <td>Lógica de negócio, validações, orquestração de operações</td>
+        </tr>
+        <tr>
+            <td><strong>Repository</strong></td>
+            <td>UsuarioRepository</td>
+            <td>Acesso a dados, queries SQL abstratas</td>
+        </tr>
+        <tr>
+            <td><strong>Security</strong></td>
+            <td>SecurityConfig<br>AuthFilter</td>
+            <td>Configuração de segurança, autenticação JWT</td>
+        </tr>
+        <tr>
+            <td><strong>Handler</strong></td>
+            <td>GlobalExceptionHandler</td>
+            <td>Tratamento centralizado de exceções, respostas padronizadas</td>
+        </tr>
+        <tr>
+            <td><strong>DTO</strong></td>
+            <td>*RequestDTO<br>*ResponseDTO<br>ProblemDetailDTO</td>
+            <td>Transferência de dados entre camadas</td>
+        </tr>
+    </table>
+
+    <h2>Padrões de Projeto Utilizados</h2>
+    <ul>
+        <li><strong>MVC:</strong> Separação Model-View-Controller</li>
+        <li><strong>DTO:</strong> Data Transfer Objects para comunicação entre camadas</li>
+        <li><strong>Repository:</strong> Abstração de acesso a dados</li>
+        <li><strong>Service:</strong> Lógica de negócio centralizada</li>
+        <li><strong>Exception Handler:</strong> Tratamento global de exceções</li>
+        <li><strong>Mapper:</strong> Conversão entre entidades e DTOs</li>
+    </ul>
+
+    <h2>Princípios SOLID Aplicados</h2>
+    <ul>
+        <li><strong>S (Single Responsibility):</strong> Cada classe tem uma única responsabilidade</li>
+        <li><strong>O (Open/Closed):</strong> Aberto para extensão, fechado para modificação</li>
+        <li><strong>L (Liskov Substitution):</strong> Interfaces bem definidas para substituição</li>
+        <li><strong>I (Interface Segregation):</strong> Interfaces específicas e segregadas</li>
+        <li><strong>D (Dependency Inversion):</strong> Injeção de dependências com Spring</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 3: ENTIDADES -->
+<div class="page">
+    <h1 id="entities">3. Modelagem de Entidades e Relacionamentos</h1>
+
+    <h2>Entidade: Usuario</h2>
+    <table class="spec-table">
+        <tr><td>Tabela</td><td>usuarios</td></tr>
+        <tr><td>Chave Primária</td><td>id (BIGINT, auto-increment)</td></tr>
+        <tr><td>Implementa</td><td>Spring Security UserDetails</td></tr>
+    </table>
+
+    <h3>Campos</h3>
+    <table>
+        <tr>
+            <th>Campo</th>
+            <th>Tipo</th>
+            <th>Constraints</th>
+            <th>Descrição</th>
+        </tr>
+        <tr>
+            <td>id</td>
+            <td>BIGINT</td>
+            <td>PK, Auto-increment</td>
+            <td>Identificador único</td>
+        </tr>
+        <tr>
+            <td>nome</td>
+            <td>VARCHAR(255)</td>
+            <td>NOT NULL, 3-120 chars</td>
+            <td>Nome completo do usuário</td>
+        </tr>
+        <tr>
+            <td>email</td>
+            <td>VARCHAR(255)</td>
+            <td>UNIQUE, NOT NULL, Valid Email</td>
+            <td>Email único para login</td>
+        </tr>
+        <tr>
+            <td>loginUsername</td>
+            <td>VARCHAR(255)</td>
+            <td>UNIQUE, NOT NULL, 3-50 chars</td>
+            <td>Username único para login</td>
+        </tr>
+        <tr>
+            <td>senha</td>
+            <td>VARCHAR(255)</td>
+            <td>NOT NULL, 8-100 chars, BCrypt</td>
+            <td>Senha criptografada com BCrypt</td>
+        </tr>
+        <tr>
+            <td>tipoUsuario</td>
+            <td>ENUM</td>
+            <td>NOT NULL, CHECK constraint</td>
+            <td>CLIENTE ou DONO_RESTAURANTE</td>
+        </tr>
+        <tr>
+            <td>dataUltimaAlteracao</td>
+            <td>TIMESTAMP</td>
+            <td>Auto-atualizado</td>
+            <td>Data da última modificação</td>
+        </tr>
+        <tr>
+            <td>endereco_*</td>
+            <td>VARCHAR</td>
+            <td>Embedded</td>
+            <td>Objeto Endereco embarcado</td>
+        </tr>
+    </table>
+
+    <h2>Objeto Embarcado: Endereco</h2>
+    <table class="spec-table">
+        <tr><td>Tipo</td><td>@Embeddable</td></tr>
+        <tr><td>Relacionamento</td><td>Um-para-Um (Embarcado)</td></tr>
+    </table>
+
+    <h3>Campos</h3>
+    <ul>
+        <li><strong>rua:</strong> VARCHAR(120), obrigatório</li>
+        <li><strong>numero:</strong> VARCHAR(10), obrigatório</li>
+        <li><strong>cidade:</strong> VARCHAR(80), obrigatório</li>
+        <li><strong>estado:</strong> VARCHAR(2), obrigatório (exatamente 2 caracteres)</li>
+        <li><strong>cep:</strong> VARCHAR(10), obrigatório (formato: XXXXX-XXX ou XXXXXXX)</li>
+    </ul>
+
+    <h2>Enum: TipoUsuario</h2>
+    <ul>
+        <li><strong>CLIENTE:</strong> Usuário cliente do restaurante</li>
+        <li><strong>DONO_RESTAURANTE:</strong> Proprietário/gestor do restaurante</li>
+    </ul>
+
+    <h2>Relacionamentos</h2>
+    <ul>
+        <li>Usuario → Endereco (Um-para-Um, Embarcado)</li>
+        <li>Usuario implementa UserDetails (Spring Security Integration)</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 4: ENDPOINTS -->
+<div class="page">
+    <h1 id="endpoints">4. Endpoints da API</h1>
+
+    <h2>Base URL</h2>
+    <div class="code">http://localhost:8080/api/v1</div>
+
+    <h2>Autenticação</h2>
+    <div class="endpoint">
+        <strong>POST</strong> /login<br>
+        <strong>Descrição:</strong> Autentica usuário e retorna JWT<br>
+        <strong>Body:</strong> { "email": "user@email.com", "senha": "password" }<br>
+        <strong>Response:</strong> { "token": "jwt_token", "email": "user@email.com" }<br>
+        <strong>Status:</strong> 200 OK ou 401 Unauthorized
+    </div>
+
+    <h2>Usuários - Criar</h2>
+    <div class="endpoint">
+        <strong>POST</strong> /usuarios<br>
+        <strong>Descrição:</strong> Cria novo usuário<br>
+        <strong>Body:</strong> UsuarioRequestDTO<br>
+        <strong>Response:</strong> 201 Created<br>
+        <strong>Erros:</strong> 409 Conflict (duplicado), 400 Bad Request (validação)
+    </div>
+
+    <h2>Usuários - Listar</h2>
+    <div class="endpoint">
+        <strong>GET</strong> /usuarios?page=1&size=10<br>
+        <strong>Descrição:</strong> Lista usuários com paginação<br>
+        <strong>Params:</strong> page (default: 1), size (default: 10)<br>
+        <strong>Response:</strong> List&lt;Usuario&gt; - 200 OK
+    </div>
+
+    <h2>Usuários - Buscar por ID</h2>
+    <div class="endpoint">
+        <strong>GET</strong> /usuarios/{id}<br>
+        <strong>Descrição:</strong> Retorna usuário específico<br>
+        <strong>Response:</strong> Usuario - 200 OK<br>
+        <strong>Erros:</strong> 404 Not Found
+    </div>
+
+    <h2>Usuários - Buscar por Nome</h2>
+    <div class="endpoint">
+        <strong>GET</strong> /usuarios/search/nome?nome=value<br>
+        <strong>Descrição:</strong> Busca usuários por nome (sem exposição de senha)<br>
+        <strong>Response:</strong> List&lt;UsuarioUpdateDTO&gt; - 200 OK
+    </div>
+
+    <h2>Usuários - Atualizar (sem senha)</h2>
+    <div class="endpoint">
+        <strong>PUT</strong> /usuarios/{id}<br>
+        <strong>Descrição:</strong> Atualiza dados do usuário (não altera senha)<br>
+        <strong>Body:</strong> UsuarioUpdateDTO<br>
+        <strong>Response:</strong> Usuario - 200 OK<br>
+        <strong>Erros:</strong> 404 Not Found, 409 Conflict, 400 Bad Request
+    </div>
+
+    <h2>Usuários - Trocar Senha</h2>
+    <div class="endpoint">
+        <strong>PATCH</strong> /usuarios/{id}/senha<br>
+        <strong>Descrição:</strong> Altera senha do usuário<br>
+        <strong>Body:</strong> TrocarSenhaRequestDTO<br>
+        <strong>Response:</strong> 204 No Content<br>
+        <strong>Erros:</strong> 404 Not Found, 400 Bad Request (senha incorreta)
+    </div>
+
+    <h2>Usuários - Deletar</h2>
+    <div class="endpoint">
+        <strong>DELETE</strong> /usuarios/{id}<br>
+        <strong>Descrição:</strong> Deleta usuário<br>
+        <strong>Response:</strong> 204 No Content<br>
+        <strong>Erros:</strong> 404 Not Found
+    </div>
+
+    <h2>Resumo de Endpoints</h2>
+    <table>
+        <tr>
+            <th>Método</th>
+            <th>Endpoint</th>
+            <th>Descrição</th>
+            <th>Auth</th>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/login</td>
+            <td>Autenticar</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/usuarios</td>
+            <td>Criar</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/usuarios</td>
+            <td>Listar</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/usuarios/{id}</td>
+            <td>Buscar ID</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/usuarios/search/nome</td>
+            <td>Buscar Nome</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>PUT</td>
+            <td>/usuarios/{id}</td>
+            <td>Atualizar</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>PATCH</td>
+            <td>/usuarios/{id}/senha</td>
+            <td>Trocar Senha</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td>DELETE</td>
+            <td>/usuarios/{id}</td>
+            <td>Deletar</td>
+            <td>❌</td>
+        </tr>
+    </table>
+</div>
+
+<!-- SEÇÃO 5: SWAGGER -->
+<div class="page">
+    <h1 id="swagger">5. Documentação Swagger/OpenAPI</h1>
+
+    <h2>URL de Acesso</h2>
+    <div class="code">http://localhost:8080/swagger-ui.html</div>
+
+    <h2>Características da Documentação</h2>
+    <ul>
+        <li>✅ OpenAPI 3.0 compliant</li>
+        <li>✅ Todos os 7 endpoints documentados</li>
+        <li>✅ Exemplos de requisição e resposta</li>
+        <li>✅ Descrições em português</li>
+        <li>✅ Suporte a autenticação JWT Bearer</li>
+        <li>✅ Códigos de resposta HTTP documentados</li>
+        <li>✅ Schemas de DTOs visíveis</li>
+        <li>✅ Validações expostas na documentação</li>
+    </ul>
+
+    <h2>Configuração</h2>
+    <p>A documentação é configurada em <strong>SwaggerConfig.java</strong> com:</p>
+    <ul>
+        <li>Info: Título "Gestão API" versão "v1"</li>
+        <li>Servidor: URL base "/"</li>
+        <li>Security Scheme: Bearer JWT</li>
+        <li>Components: Esquemas de todos os DTOs</li>
+    </ul>
+
+    <h2>Teste via Swagger UI</h2>
+    <ol>
+        <li>Acesse http://localhost:8080/swagger-ui.html</li>
+        <li>Execute /login para obter token</li>
+        <li>Clique em "Authorize" e insira o token</li>
+        <li>Execute qualquer endpoint para testar</li>
+    </ol>
+
+    <h2>Formatos de Resposta</h2>
+    <h3>Sucesso (2xx)</h3>
+    <div class="code">
+{
+  "id": 1,
+  "nome": "João Silva",
+  "email": "joao@email.com",
+  "loginUsername": "joao_silva",
+  "tipoUsuario": "CLIENTE",
+  "dataUltimaAlteracao": "2026-04-17T10:30:00",
+  "endereco": {
+    "rua": "Rua das Flores",
+    "numero": "123",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01310100"
+  }
+}
+    </div>
+
+    <h3>Erro RFC 7807 (4xx/5xx)</h3>
+    <div class="code">
+{
+  "type": "https://api.gestao.com/erros/usuario-duplicado",
+  "title": "Usuário duplicado",
+  "status": 409,
+  "detail": "Email já cadastrado no sistema",
+  "instance": "/api/v1/usuarios",
+  "timestamp": "2026-04-17T10:30:00Z",
+  "fieldErrors": null
+}
+    </div>
+</div>
+
+<!-- SEÇÃO 6: POSTMAN -->
+<div class="page">
+    <h1 id="postman">6. Coleção Postman</h1>
+
+    <h2>Arquivo</h2>
+    <div class="code">Gestao_API_Postman.json</div>
+
+    <h2>Cobertura de Testes</h2>
+    <p>A coleção contém <strong>24 testes</strong> organizados em 7 grupos:</p>
+
+    <table>
+        <tr>
+            <th>Grupo</th>
+            <th>Testes</th>
+            <th>Cenários</th>
+        </tr>
+        <tr>
+            <td>Autenticação</td>
+            <td>3</td>
+            <td>Login válido, email inválido, senha incorreta</td>
+        </tr>
+        <tr>
+            <td>Criar Usuários</td>
+            <td>9</td>
+            <td>Válido, duplicado, inválido (email/CEP/estado/campos)</td>
+        </tr>
+        <tr>
+            <td>Listar Usuários</td>
+            <td>3</td>
+            <td>Todos, page 1, page 2</td>
+        </tr>
+        <tr>
+            <td>Buscar Usuários</td>
+            <td>4</td>
+            <td>Por ID (existente/inexistente), por nome</td>
+        </tr>
+        <tr>
+            <td>Atualizar Usuários</td>
+            <td>4</td>
+            <td>Sucesso, ID inexistente, duplicado, validação falha</td>
+        </tr>
+        <tr>
+            <td>Trocar Senha</td>
+            <td>4</td>
+            <td>Sucesso, ID inexistente, senha errada, confirmação diferente</td>
+        </tr>
+        <tr>
+            <td>Deletar Usuários</td>
+            <td>3</td>
+            <td>Sucesso, já deletado, ID inválido</td>
+        </tr>
+    </table>
+
+    <h2>Importação</h2>
+    <ol>
+        <li>Abra Postman</li>
+        <li>Clique em "Import"</li>
+        <li>Selecione o arquivo "Gestao_API_Postman.json"</li>
+        <li>Configure a variável "baseUrl" para http://localhost:8080</li>
+        <li>Execute os testes na sequência sugerida</li>
+    </ol>
+
+    <h2>Variáveis de Ambiente</h2>
+    <table>
+        <tr>
+            <th>Variável</th>
+            <th>Valor Padrão</th>
+            <th>Descrição</th>
+        </tr>
+        <tr>
+            <td>{{baseUrl}}</td>
+            <td>http://localhost:8080</td>
+            <td>URL base da API</td>
+        </tr>
+        <tr>
+            <td>{{token}}</td>
+            <td>(vazio)</td>
+            <td>JWT Bearer Token (preenchido após login)</td>
+        </tr>
+    </table>
+</div>
+
+<!-- SEÇÃO 7: BANCO DE DADOS -->
+<div class="page">
+    <h1 id="database">7. Banco de Dados</h1>
+
+    <h2>Tecnologia</h2>
+    <ul>
+        <li><strong>Engine:</strong> PostgreSQL 12+</li>
+        <li><strong>Driver:</strong> org.postgresql:postgresql (runtime)</li>
+        <li><strong>ORM:</strong> Spring Data JPA com Hibernate</li>
+        <li><strong>Migrations:</strong> Flyway</li>
+    </ul>
+
+    <h2>Configuração de Conexão</h2>
+    <div class="code">
+URL: jdbc:postgresql://localhost:5432/mydatabase
+Usuário: myuser
+Senha: secret
+Driver: org.postgresql.Driver
+    </div>
+
+    <h2>DDL - Tabela usuarios</h2>
+    <div class="code">
+CREATE TABLE usuarios (
+  id BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+  nome VARCHAR(255),
+  email VARCHAR(255) UNIQUE,
+  login_username VARCHAR(255) UNIQUE,
+  senha VARCHAR(255) NOT NULL,
+  tipo_usuario VARCHAR(255) CHECK (tipo_usuario IN ('CLIENTE','DONO_RESTAURANTE')),
+  rua VARCHAR(255),
+  numero VARCHAR(255),
+  cidade VARCHAR(255),
+  estado VARCHAR(255),
+  cep VARCHAR(255),
+  data_ultima_alteracao TIMESTAMP(6),
+  PRIMARY KEY (id)
+);
+    </div>
+
+    <h2>Constraints e Índices</h2>
+    <ul>
+        <li><strong>PRIMARY KEY:</strong> id (auto-increment BIGINT)</li>
+        <li><strong>UNIQUE:</strong> email, login_username</li>
+        <li><strong>NOT NULL:</strong> senha, tipo_usuario</li>
+        <li><strong>CHECK:</strong> tipo_usuario IN ('CLIENTE','DONO_RESTAURANTE')</li>
+        <li><strong>Índices implícitos:</strong> PK e UKs automaticamente indexadas</li>
+    </ul>
+
+    <h2>Migrações Flyway</h2>
+    <table>
+        <tr>
+            <th>Versão</th>
+            <th>Arquivo</th>
+            <th>Descrição</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>V1__Create_Usuario_Table.sql</td>
+            <td>Criação inicial da tabela usuarios</td>
+        </tr>
+    </table>
+
+    <h2>Estratégia de Validação</h2>
+    <p>A aplicação utiliza <strong>ddl-auto=validate</strong> no Hibernate:</p>
+    <ul>
+        <li>Valida se o schema existe</li>
+        <li>Não cria ou modifica tabelas automaticamente</li>
+        <li>Falha na inicialização se houver inconsistências</li>
+        <li>Migrations são gerenciadas exclusivamente pelo Flyway</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 8: DOCKER -->
+<div class="page">
+    <h1 id="docker">8. Execução com Docker</h1>
+
+    <h2>Arquivo: compose.yaml</h2>
+    <div class="code">
+services:
+  postgres:
+    image: 'postgres:latest'
+    container_name: postgres_db
+    environment:
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=myuser'
+    ports:
+      - '5432:5432'
+    </div>
+
+    <h2>Pré-requisitos</h2>
+    <ul>
+        <li>Docker 20.10+</li>
+        <li>Docker Compose 1.29+</li>
+        <li>Java 17+</li>
+        <li>Maven 3.8+</li>
+    </ul>
+
+    <h2>Instruções de Execução</h2>
+    <h3>Passo 1: Iniciar Banco de Dados</h3>
+    <div class="code">
+cd tech_challenge_fase1
+docker compose up -d
+    </div>
+    <p>Verifica: Docker Desktop rodando, pode demorar alguns segundos para o PostgreSQL inicializar.</p>
+
+    <h3>Passo 2: Compilar a Aplicação</h3>
+    <div class="code">
+./mvnw.cmd clean compile
+    </div>
+    <p>Isso baixa dependências Maven e compila o código fonte.</p>
+
+    <h3>Passo 3: Executar a Aplicação</h3>
+    <div class="code">
+./mvnw.cmd spring-boot:run
+    </div>
+    <p>A aplicação inicia na porta 8080. Espere mensagens de sucesso.</p>
+
+    <h3>Passo 4: Testar Endpoints</h3>
+    <div class="code">
+# Terminal novo
+curl -X GET http://localhost:8080/api/v1/usuarios
+    </div>
+
+    <h3>Passo 5: Acessar Documentação</h3>
+    <ul>
+        <li>Swagger UI: http://localhost:8080/swagger-ui.html</li>
+        <li>OpenAPI JSON: http://localhost:8080/v3/api-docs</li>
+    </ul>
+
+    <h2>Parando a Aplicação</h2>
+    <div class="code">
+# Parar a aplicação Spring Boot: Ctrl+C no terminal
+# Parar o PostgreSQL:
+docker compose down
+
+# Parar e remover volumes:
+docker compose down -v
+    </div>
+
+    <h2>Troubleshooting</h2>
+    <ul>
+        <li><strong>Porta 5432 em uso:</strong> docker ps, identifique container, docker stop {id}</li>
+        <li><strong>Conexão recusada:</strong> docker compose logs postgres</li>
+        <li><strong>Erro de compilação:</strong> ./mvnw.cmd clean (limpa cache Maven)</li>
+        <li><strong>Porta 8080 em uso:</strong> Altere spring.server.port em application.properties</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 9: TECH STACK -->
+<div class="page">
+    <h1 id="tech">9. Stack Tecnológico</h1>
+
+    <h2>Backend</h2>
+    <table>
+        <tr>
+            <th>Tecnologia</th>
+            <th>Versão</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td>Java</td>
+            <td>17</td>
+            <td>Linguagem principal</td>
+        </tr>
+        <tr>
+            <td>Spring Boot</td>
+            <td>3.0.3</td>
+            <td>Framework web</td>
+        </tr>
+        <tr>
+            <td>Spring Security</td>
+            <td>6.0.x</td>
+            <td>Autenticação e autorização</td>
+        </tr>
+        <tr>
+            <td>Spring Data JPA</td>
+            <td>3.0.x</td>
+            <td>Persistência de dados</td>
+        </tr>
+        <tr>
+            <td>Hibernate</td>
+            <td>6.1.x</td>
+            <td>ORM para mapeamento</td>
+        </tr>
+    </table>
+
+    <h2>Banco de Dados e Migrations</h2>
+    <table>
+        <tr>
+            <th>Tecnologia</th>
+            <th>Versão</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td>PostgreSQL</td>
+            <td>12+</td>
+            <td>Banco de dados relacional</td>
+        </tr>
+        <tr>
+            <td>Flyway</td>
+            <td>9.x</td>
+            <td>Versionamento de schema</td>
+        </tr>
+        <tr>
+            <td>JDBC Driver</td>
+            <td>42.x</td>
+            <td>Conexão com PostgreSQL</td>
+        </tr>
+    </table>
+
+    <h2>Segurança e Autenticação</h2>
+    <table>
+        <tr>
+            <th>Tecnologia</th>
+            <th>Versão</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td>java-jwt</td>
+            <td>4.5.0</td>
+            <td>Geração e validação de JWT</td>
+        </tr>
+        <tr>
+            <td>BCrypt</td>
+            <td>Spring Security</td>
+            <td>Criptografia de senhas</td>
+        </tr>
+    </table>
+
+    <h2>Validação e Documentação</h2>
+    <table>
+        <tr>
+            <th>Tecnologia</th>
+            <th>Versão</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td>Jakarta Validation</td>
+            <td>3.0.x</td>
+            <td>Validação de dados</td>
+        </tr>
+        <tr>
+            <td>Springdoc OpenAPI</td>
+            <td>3.0.2</td>
+            <td>Documentação Swagger</td>
+        </tr>
+        <tr>
+            <td>Jackson</td>
+            <td>2.14.x</td>
+            <td>Serialização JSON</td>
+        </tr>
+    </table>
+
+    <h2>Build e Suporte</h2>
+    <table>
+        <tr>
+            <th>Tecnologia</th>
+            <th>Versão</th>
+            <th>Propósito</th>
+        </tr>
+        <tr>
+            <td>Maven</td>
+            <td>3.8+</td>
+            <td>Build automation</td>
+        </tr>
+        <tr>
+            <td>Docker</td>
+            <td>20.10+</td>
+            <td>Containerização</td>
+        </tr>
+        <tr>
+            <td>Lombok</td>
+            <td>1.18.x</td>
+            <td>Redução de boilerplate</td>
+        </tr>
+    </table>
+
+    <h2>Dependências Principais (pom.xml)</h2>
+    <ul>
+        <li>spring-boot-starter-web: REST API</li>
+        <li>spring-boot-starter-data-jpa: Persistência</li>
+        <li>spring-boot-starter-security: Segurança</li>
+        <li>spring-boot-starter-validation: Validações</li>
+        <li>spring-boot-starter-flyway: Migrações</li>
+        <li>springdoc-openapi-starter-webmvc-ui: Swagger</li>
+        <li>postgresql: Driver PostgreSQL</li>
+        <li>java-jwt: JWT</li>
+    </ul>
+</div>
+
+<!-- SEÇÃO 10: CONCLUSÃO -->
+<div class="page">
+    <h1 id="conclusion">10. Conclusão</h1>
+
+    <h2>Resumo da Implementação</h2>
+    <p>O projeto <strong>Gestão API - Tech Challenge Fase 1</strong> foi desenvolvido com sucesso, atendendo a todos os requisitos obrigatórios e muitos requisitos opcionais. A aplicação demonstra boas práticas de desenvolvimento backend, arquitetura limpa e conformidade com padrões modernos.</p>
+
+    <h2>Requisitos Cumpridos</h2>
+    <ul>
+        <li>✅ Gestão completa de usuários (CRUD)</li>
+        <li>✅ Autenticação JWT robusta</li>
+        <li>✅ Validações abrangentes</li>
+        <li>✅ Padrão ProblemDetail (RFC 7807)</li>
+        <li>✅ Documentação Swagger completa</li>
+        <li>✅ Coleção Postman com 24 testes</li>
+        <li>✅ Docker Compose funcional</li>
+        <li>✅ Código bem estruturado e testável</li>
+    </ul>
+
+    <h2>Melhorias Futuras (Phase 2+)</h2>
+    <ul>
+        <li>Implementar endpoints de restaurantes</li>
+        <li>Sistema de pedidos online</li>
+        <li>Sistema de avaliações</li>
+        <li>Notificações em tempo real</li>
+        <li>Testes unitários abrangentes</li>
+        <li>Integração com gateway de pagamento</li>
+        <li>Cache distribuído (Redis)</li>
+        <li>Message queue (RabbitMQ/Kafka)</li>
+    </ul>
+
+    <h2>Arquivos Entregues</h2>
+    <ul>
+        <li>✅ Código-fonte completo (GitHub)</li>
+        <li>✅ README.md com instruções</li>
+        <li>✅ docker-compose.yaml funcional</li>
+        <li>✅ Gestao_API_Postman.json</li>
+        <li>✅ Documentação Swagger interativa</li>
+        <li>✅ Relatório técnico (este documento)</li>
+    </ul>
+
+    <h2>Como Usar Este Projeto</h2>
+    <ol>
+        <li>Clone o repositório do GitHub</li>
+        <li>Execute: docker compose up -d</li>
+        <li>Execute: ./mvnw.cmd spring-boot:run</li>
+        <li>Acesse: http://localhost:8080/swagger-ui.html</li>
+        <li>Importe a coleção Postman para testes</li>
+    </ol>
+
+    <h2>Contato e Suporte</h2>
+    <p><strong>Desenvolvedor:</strong> Wesley<br>
+    <strong>Email:</strong> wesley@email.com<br>
+    <strong>Instituição:</strong> FIAP<br>
+    <strong>Data:</strong> 17 de Abril de 2026</p>
+
+    <h2>Referências</h2>
+    <ul>
+        <li><a href="https://spring.io/projects/spring-boot">Spring Boot Documentation</a></li>
+        <li><a href="https://tools.ietf.org/html/rfc7807">RFC 7807 - Problem Details</a></li>
+        <li><a href="https://spec.openapis.org/oas/v3.0.0">OpenAPI 3.0 Specification</a></li>
+        <li><a href="https://docs.docker.com/">Docker Documentation</a></li>
+        <li><a href="https://www.postgresql.org/docs/">PostgreSQL Documentation</a></li>
+    </ul>
+</div>
+
+<!-- RODAPÉ -->
+<div class="page">
+    <div class="footer">
+        <p><strong>Gestão API - Relatório Técnico</strong></p>
+        <p>Tech Challenge Fase 1 - FIAP</p>
+        <p>Gerado em 17 de Abril de 2026</p>
+        <p>Versão: 0.0.1-SNAPSHOT</p>
+    </div>
+</div>
+
+</body>
+</html>
