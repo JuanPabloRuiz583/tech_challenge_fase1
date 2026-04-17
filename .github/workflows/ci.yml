@@ -32,7 +32,6 @@ concurrency:
 # Global permissions
 permissions:
   contents: read
-  issues: write
   actions: read
   checks: read
 
