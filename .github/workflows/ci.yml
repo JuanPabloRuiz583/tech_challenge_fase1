@@ -202,45 +202,79 @@ jobs:
           > _Automatically created by the BrekFood CI pipeline._"
 
           # Check if develop branch exists
+          echo "🔍 Checking if develop branch exists..."
           if ! gh api repos/:owner/:repo/branches/develop >/dev/null 2>&1; then
             echo "⚠️ Target branch 'develop' does not exist. Creating it from main..."
             # Try to create develop branch from main
+            MAIN_SHA=$(gh api repos/:owner/:repo/git/refs/heads/main --jq '.object.sha' 2>/dev/null)
+            if [ -z "$MAIN_SHA" ]; then
+              echo "❌ Failed to get main branch SHA. Checking if main exists..."
+              gh api repos/:owner/:repo/branches/main >/dev/null 2>&1 || {
+                echo "❌ Neither develop nor main branch exists. Cannot create PR."
+                exit 1
+              }
+            fi
+            
             if gh api repos/:owner/:repo/git/refs \
               --method POST \
               --field ref="refs/heads/develop" \
-              --field sha="$(gh api repos/:owner/:repo/git/refs/heads/main --jq '.object.sha')" >/dev/null 2>&1; then
+              --field sha="$MAIN_SHA" 2>&1; then
               echo "✅ Created develop branch from main"
             else
               echo "❌ Failed to create develop branch. Skipping PR creation."
               exit 0
             fi
+          else
+            echo "✅ Develop branch exists"
           fi
 
           # Check if a PR already exists for this branch -> develop
+          echo "🔍 Checking for existing PRs..."
           EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
 
           if [ -n "$EXISTING_PR" ]; then
             echo "✅ PR #${EXISTING_PR} already exists for ${BRANCH_NAME} → develop. Skipping."
           else
             echo "📝 Creating PR: ${BRANCH_NAME} → develop"
+            echo "🔍 Debug: Branch = $BRANCH_NAME, Title = $CLEAN_TITLE"
             
-            # Create PR without labels first, then try to add labels if they exist
-            PR_NUMBER=$(gh pr create \
+            # Create PR and capture both output and errors
+            echo "🔍 Executing gh pr create command..."
+            PR_OUTPUT=$(gh pr create \
               --base develop \
               --head "$BRANCH_NAME" \
               --title "🔀 ${CLEAN_TITLE}" \
               --body "$PR_BODY" \
-              --json number \
-              --jq '.number' 2>/dev/null)
+              --json number,url 2>&1)
 
-            if [ -n "$PR_NUMBER" ]; then
-              echo "✅ PR #${PR_NUMBER} created successfully"
+            if [ $? -eq 0 ]; then
+              PR_NUMBER=$(echo "$PR_OUTPUT" | jq -r '.number' 2>/dev/null)
+              PR_URL=$(echo "$PR_OUTPUT" | jq -r '.url' 2>/dev/null)
               
-              # Try to add labels if they exist (ignore errors)
-              gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
-              gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
+              if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+                echo "✅ PR #${PR_NUMBER} created successfully: $PR_URL"
+                
+                # Try to add labels if they exist (ignore errors)
+                gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
+                gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
+              else
+                echo "⚠️ PR created but failed to parse response: $PR_OUTPUT"
+              fi
             else
-              echo "❌ Failed to create PR from ${BRANCH_NAME} to develop"
+              echo "❌ Failed to create PR. Error output:"
+              echo "$PR_OUTPUT"
+              
+              # Additional diagnostics
+              echo ""
+              echo "🔍 Diagnostic information:"
+              echo "  Current branch: $BRANCH_NAME"
+              echo "  Target branch: develop" 
+              echo "  Repository info:"
+              gh repo view --json owner,name || echo "  Failed to get repo info"
+              echo ""
+              echo "  Available branches:"
+              gh api repos/:owner/:repo/branches --jq '.[].name' | head -10 || echo "  Failed to list branches"
+              
               exit 1
             fi
           fi
