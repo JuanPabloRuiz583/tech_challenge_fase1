@@ -117,7 +117,7 @@ jobs:
       with:
         source_branch: ${{ github.ref_name }}
         destination_branch: develop
-        pr_title: "🤖 Auto-PR: ${{ github.ref_name }}"
+        pr_title: "🤖 Auto-PR : ${{ github.ref_name }}"
         pr_body: |
           ## 🤖 Automated Pull Request
           
