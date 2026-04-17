@@ -1,0 +1,68 @@
+package br.com.fiap.gestao.convertordto;
+
+import br.com.fiap.gestao.dto.UsuarioRequestDTO;
+import br.com.fiap.gestao.dto.UsuarioUpdateDTO;
+import br.com.fiap.gestao.model.Endereco;
+import br.com.fiap.gestao.model.Usuario;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UsuarioMapper {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public Usuario toEntity(UsuarioRequestDTO dto) {
+        Usuario usuario = new Usuario();
+        applyUpdates(usuario, dto);
+        return usuario;
+    }
+
+    public void applyUpdates(Usuario usuario, UsuarioRequestDTO dto) {
+        usuario.setNome(dto.nome());
+        usuario.setEmail(dto.email());
+        usuario.setLoginUsername(dto.loginUsername());
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
+        usuario.setTipoUsuario(dto.tipoUsuario());
+        usuario.setEndereco(mapEndereco(dto.endereco()));
+    }
+
+    public void applyUpdates(Usuario usuario, UsuarioUpdateDTO dto) {
+        usuario.setNome(dto.nome());
+        usuario.setEmail(dto.email());
+        usuario.setLoginUsername(dto.loginUsername());
+        usuario.setTipoUsuario(dto.tipoUsuario());
+        usuario.setEndereco(mapEndereco(dto.endereco()));
+    }
+
+    public UsuarioUpdateDTO toUpdateDTO(Usuario usuario) {
+        return new UsuarioUpdateDTO(
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getLoginUsername(),
+                usuario.getTipoUsuario(),
+                mapEnderecoToDTO(usuario.getEndereco())
+        );
+    }
+
+    private UsuarioRequestDTO.EnderecoDTO mapEnderecoToDTO(Endereco endereco) {
+        return new UsuarioRequestDTO.EnderecoDTO(
+                endereco.getRua(),
+                endereco.getNumero(),
+                endereco.getCidade(),
+                endereco.getEstado(),
+                endereco.getCep()
+        );
+    }
+
+    private Endereco mapEndereco(UsuarioRequestDTO.EnderecoDTO enderecoDTO) {
+        Endereco endereco = new Endereco();
+        endereco.setRua(enderecoDTO.rua());
+        endereco.setNumero(enderecoDTO.numero());
+        endereco.setCidade(enderecoDTO.cidade());
+        endereco.setEstado(enderecoDTO.estado());
+        endereco.setCep(enderecoDTO.cep());
+        return endereco;
+    }
+}
