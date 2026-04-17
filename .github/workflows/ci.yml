@@ -201,19 +201,47 @@ jobs:
           ---
           > _Automatically created by the BrekFood CI pipeline._"
 
+          # Check if develop branch exists
+          if ! gh api repos/:owner/:repo/branches/develop >/dev/null 2>&1; then
+            echo "⚠️ Target branch 'develop' does not exist. Creating it from main..."
+            # Try to create develop branch from main
+            if gh api repos/:owner/:repo/git/refs \
+              --method POST \
+              --field ref="refs/heads/develop" \
+              --field sha="$(gh api repos/:owner/:repo/git/refs/heads/main --jq '.object.sha')" >/dev/null 2>&1; then
+              echo "✅ Created develop branch from main"
+            else
+              echo "❌ Failed to create develop branch. Skipping PR creation."
+              exit 0
+            fi
+          fi
+
           # Check if a PR already exists for this branch -> develop
-          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --state open --json number --jq '.[0].number' || echo "")
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
 
           if [ -n "$EXISTING_PR" ]; then
             echo "✅ PR #${EXISTING_PR} already exists for ${BRANCH_NAME} → develop. Skipping."
           else
             echo "📝 Creating PR: ${BRANCH_NAME} → develop"
-            gh pr create \
+            
+            # Create PR without labels first, then try to add labels if they exist
+            PR_NUMBER=$(gh pr create \
               --base develop \
               --head "$BRANCH_NAME" \
               --title "🔀 ${CLEAN_TITLE}" \
               --body "$PR_BODY" \
-              --label "ci/auto-pr" \
-              --label "review-needed" || echo "⚠️ PR creation failed (branch may already be merged or develop doesn't exist yet)"
+              --json number \
+              --jq '.number' 2>/dev/null)
+
+            if [ -n "$PR_NUMBER" ]; then
+              echo "✅ PR #${PR_NUMBER} created successfully"
+              
+              # Try to add labels if they exist (ignore errors)
+              gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
+              gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
+            else
+              echo "❌ Failed to create PR from ${BRANCH_NAME} to develop"
+              exit 1
+            fi
           fi
 
