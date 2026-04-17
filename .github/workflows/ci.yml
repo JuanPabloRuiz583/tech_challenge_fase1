@@ -1,5 +1,5 @@
 # ======================================================
-# BrekFood — CI Pipeline
+# Tech Challenge — CI Pipeline
 # Triggers: push to feature/*, hotfix/*, bugfix/*
 #           pull_request to develop, main
 # Jobs:
@@ -32,7 +32,6 @@ concurrency:
 # Global permissions
 permissions:
   contents: read
-  pull-requests: write
   issues: write
   actions: read
   checks: read
