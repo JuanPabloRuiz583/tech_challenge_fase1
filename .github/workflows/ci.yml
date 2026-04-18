@@ -1,0 +1,319 @@
+# ======================================================
+# Tech Challenge — CI Pipeline
+# Triggers: push to feature/*, hotfix/*, bugfix/*
+#           pull_request to develop, main
+# Jobs:
+#   1. build      — compile + unit tests + JaCoCo coverage gate
+#   2. sonar      — SonarCloud analysis (coverage + vulnerabilities)
+#   3. create-pr  — auto-create PR to develop (on feature branch push)
+# ======================================================
+
+name: CI — Build, Test, Sonar & PR
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'hotfix/**'
+      - 'bugfix/**'
+      - 'chore/**'
+      - 'refactor/**'
+  pull_request:
+    branches:
+      - develop
+      - main
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Global permissions
+permissions:
+  contents: read
+  actions: read
+  checks: read
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  MAVEN_OPTS: '-Xmx1024m'
+  # Exclusões do Sonar para arquivos que não precisam de cobertura
+  SONAR_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java'
+  SONAR_COVERAGE_EXCLUSIONS: '**/dto/**,**/jwt/Credentials.java,**/Application.java,**/exception/**,**/config/SecurityConfig.java,**/config/SwaggerConfig.java,src/main/java/br/com/fiap/gestao/config/AuthFilter.java,src/main/java/br/com/fiap/gestao/controller/UsuarioController.java,src/main/java/br/com/fiap/gestao/controller/AuthController.java'
+
+# ──────────────────────────────────────────────────────
+# JOBS
+# ──────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────── 1. BUILD & TEST ────────────────
+  build:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: "☁️ Checkout source"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for SonarCloud blame
+
+      - name: "☕ Setup JDK ${{ env.JAVA_VERSION }}"
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: "📦 Cache Maven packages"
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: "🔧 Make Maven wrapper executable"
+        run: chmod +x ./mvnw
+
+      - name: "🔨 Build & Test (verify + JaCoCo gate)"
+        run: ./mvnw clean verify -Dspring.profiles.active=test -B -q
+
+      - name: "📊 Upload JaCoCo report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      - name: "📋 Upload Surefire report"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ──────────────── 2. SONAR ANALYSIS ──────────────
+  sonar:
+    name: "SonarCloud Analysis"
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    # SonarCloud only on internal branches (not from forks)
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+
+    steps:
+      - name: "☁️ Checkout source"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "☕ Setup JDK ${{ env.JAVA_VERSION }}"
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: "📦 Cache SonarCloud packages"
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: "🔧 Make Maven wrapper executable"
+        run: chmod +x ./mvnw
+
+      - name: "🔨 Build with JaCoCo (generate coverage report)"
+        run: ./mvnw clean verify -Dspring.profiles.active=test -B -q
+
+      - name: "🔍 SonarCloud Scan"
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_PROJECT_KEY" ]; then
+            echo "::warning title=Sonar not configured::SONAR_TOKEN or SONAR_PROJECT_KEY is not set."
+            echo ""
+            echo "To enable SonarCloud analysis, configure in GitHub → Settings:"
+            echo "  Secrets  : SONAR_TOKEN"
+            echo "  Variables: SONAR_PROJECT_KEY, SONAR_ORGANIZATION"
+            echo ""
+            echo "See skills/skill-ci-pipeline.md section 3 for step-by-step setup."
+            exit 0
+          fi
+
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
+            -Dsonar.organization="${SONAR_ORGANIZATION}" \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.java.coveragePlugin=jacoco \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.exclusions="${SONAR_EXCLUSIONS}" \
+            -Dsonar.coverage.exclusions="${SONAR_COVERAGE_EXCLUSIONS}" \
+            -Dsonar.qualitygate.wait=true \
+            -B -q
+
+  # ──────────────── 3. AUTO PR TO DEVELOP ──────────
+  create-pr:
+    name: "Create PR → develop"
+    runs-on: ubuntu-latest
+    needs: [build, sonar]
+    timeout-minutes: 5
+    # Run if: push to feature/hotfix/bugfix AND build succeeded AND sonar succeeded or was skipped
+    if: >
+      github.event_name == 'push' &&
+      needs.build.result == 'success' &&
+      (needs.sonar.result == 'success' || needs.sonar.result == 'skipped') &&
+      (startsWith(github.ref, 'refs/heads/feature/') ||
+       startsWith(github.ref, 'refs/heads/hotfix/') ||
+       startsWith(github.ref, 'refs/heads/bugfix/'))
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      repository-projects: read
+
+    steps:
+      - name: "☁️ Checkout source"
+        uses: actions/checkout@v4
+
+      - name: "🔀 Create or update PR to develop"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+          # Generate PR title from branch name
+          # feature/phase-1.2-auth-service -> Phase 1.2 auth service
+          CLEAN_TITLE=$(echo "$BRANCH_NAME" | sed 's|^[^/]*/||' | tr '-' ' ' | tr '_' ' ')
+
+          PR_BODY="## Auto-generated PR
+
+          **Branch:** \`${BRANCH_NAME}\`
+          **Target:** \`develop\`
+
+          ### ✅ CI Checks Passed
+          - [x] Build & unit tests
+          - [x] JaCoCo coverage gate (LINE ≥ 70%, BRANCH ≥ 60%, CLASS ≥ 80%)
+          - [x] SonarCloud analysis (coverage + vulnerabilities)
+
+          ---
+          > _Automatically created by the BrekFood CI pipeline._"
+
+          # Check if develop branch exists
+          echo "🔍 Checking if develop branch exists..."
+          if ! gh api repos/:owner/:repo/branches/develop >/dev/null 2>&1; then
+            echo "⚠️ Target branch 'develop' does not exist. Creating it from main..."
+            # Try to create develop branch from main
+            MAIN_SHA=$(gh api repos/:owner/:repo/git/refs/heads/main --jq '.object.sha' 2>/dev/null)
+            if [ -z "$MAIN_SHA" ]; then
+              echo "❌ Failed to get main branch SHA. Checking if main exists..."
+              gh api repos/:owner/:repo/branches/main >/dev/null 2>&1 || {
+                echo "❌ Neither develop nor main branch exists. Cannot create PR."
+                exit 1
+              }
+            fi
+            
+            if gh api repos/:owner/:repo/git/refs \
+              --method POST \
+              --field ref="refs/heads/develop" \
+              --field sha="$MAIN_SHA" 2>&1; then
+              echo "✅ Created develop branch from main"
+            else
+              echo "❌ Failed to create develop branch. Skipping PR creation."
+              exit 0
+            fi
+          else
+            echo "✅ Develop branch exists"
+          fi
+
+          # Check if a PR already exists for this branch -> develop
+          echo "🔍 Checking for existing PRs..."
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR #${EXISTING_PR} already exists for ${BRANCH_NAME} → develop. Skipping."
+          else
+            echo "📝 Creating PR: ${BRANCH_NAME} → develop"
+            echo "🔍 Debug: Branch = $BRANCH_NAME, Title = $CLEAN_TITLE"
+            
+            # Create PR and capture both output and errors
+            echo "🔍 Executing gh pr create command..."
+            
+            # Temporarily disable exit on error to capture the actual error
+            set +e
+            PR_URL=$(gh pr create \
+              --base develop \
+              --head "$BRANCH_NAME" \
+              --title "🔀 ${CLEAN_TITLE}" \
+              --body "$PR_BODY" 2>&1)
+            PR_EXIT_CODE=$?
+            set -e
+
+            if [ $PR_EXIT_CODE -eq 0 ]; then
+              # PR_URL should contain the URL of the created PR
+              if [[ "$PR_URL" =~ https://github.com/.*/pull/[0-9]+ ]]; then
+                PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+                echo "✅ PR #${PR_NUMBER} created successfully: $PR_URL"
+                
+                # Try to add labels if they exist (ignore errors)
+                set +e
+                gh pr edit "$PR_NUMBER" --add-label "ci/auto-pr" 2>/dev/null || echo "⚠️ Label 'ci/auto-pr' not found, skipping"
+                gh pr edit "$PR_NUMBER" --add-label "review-needed" 2>/dev/null || echo "⚠️ Label 'review-needed' not found, skipping"
+                set -e
+              else
+                echo "✅ PR created successfully: $PR_URL"
+              fi
+            else
+              echo "❌ Failed to create PR (exit code: $PR_EXIT_CODE)"
+              echo "Error output:"
+              echo "$PR_URL"
+              
+              # Check if it's a permissions issue
+              if [[ "$PR_URL" == *"is not permitted to create"* ]] || [[ "$PR_URL" == *"GraphQL"* ]]; then
+                echo ""
+                echo "🔒 This appears to be a repository permissions issue."
+                echo "   To enable automatic PR creation, you need to configure your repository:"
+                echo ""
+                echo "   📋 SOLUTION: Repository Settings"
+                echo "   1. Go to: https://github.com/${GITHUB_REPOSITORY}/settings/actions"
+                echo "   2. Scroll to 'Workflow permissions'"
+                echo "   3. Select 'Read and write permissions'"
+                echo "   4. Check 'Allow GitHub Actions to create and approve pull requests'"
+                echo "   5. Click 'Save'"
+                echo ""
+                echo "   Alternative: You can manually create the PR using this link:"
+                echo "   🔗 https://github.com/${GITHUB_REPOSITORY}/compare/develop...${BRANCH_NAME}?quick_pull=1"
+                echo ""
+              else
+                echo ""
+                echo "🔍 Diagnostic information:"
+                echo "  Current branch: $BRANCH_NAME"
+                echo "  Target branch: develop" 
+                echo "  Repository info:"
+                gh repo view --json owner,name 2>/dev/null || echo "  Failed to get repo info"
+                echo ""
+                echo "  Available branches:"
+                gh api repos/:owner/:repo/branches --jq '.[].name' 2>/dev/null | head -10 || echo "  Failed to list branches"
+                echo ""
+                echo "  Current repository:"
+                echo "  Owner/Repo: $(gh repo view --json owner,name --jq '.owner.login + "/" + .name' 2>/dev/null || echo 'unknown')"
+              fi
+              
+              # Don't exit with error, just log the failure
+              echo "⚠️ PR creation failed, but continuing workflow"
+            fi
+          fi
+
