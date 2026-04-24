@@ -52,7 +52,8 @@
     <h2>Relatório Técnico - Tech Challenge Fase 1</h2>
     <p>Sistema de Gestão de Usuários para Restaurantes</p>
     <p style="margin-top: 40px; color: #666;">
-        <strong>Desenvolvedor:</strong> Wesley<br>
+        <strong>Desenvolvedores:</strong> João Vitor Silva, Juan Pablo, Rafael Romanini e Wesley de Andrade<br>
+        <strong>Repositório:</strong> <a href="https://github.com/JuanPabloRuiz583/tech_challenge_fase1" style="color: #1a73e8;">github.com/JuanPabloRuiz583/tech_challenge_fase1</a><br>
         <strong>Data:</strong> 17 de Abril de 2026<br>
         <strong>Instituição:</strong> FIAP<br>
         <strong>Versão:</strong> 0.0.1-SNAPSHOT
@@ -311,9 +312,54 @@ Response (DTOs)
     <div class="endpoint">
         <strong>POST</strong> /usuarios<br>
         <strong>Descrição:</strong> Cria novo usuário<br>
-        <strong>Body:</strong> UsuarioRequestDTO<br>
-        <strong>Response:</strong> 201 Created<br>
-        <strong>Erros:</strong> 409 Conflict (duplicado), 400 Bad Request (validação)
+        <strong>Status:</strong> 201 Created | 409 Conflict | 400 Bad Request
+    </div>
+    <h4>Request Body</h4>
+    <div class="code">
+{
+  "nome": "João Vitor Silva",
+  "email": "joao.vitor@email.com",
+  "loginUsername": "joao_vitor",
+  "senha": "Senha@123",
+  "tipoUsuario": "CLIENTE",
+  "endereco": {
+    "rua": "Rua das Flores",
+    "numero": "123",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01310-100"
+  }
+}
+    </div>
+    <h4>Response 201 Created</h4>
+    <div class="code">
+{
+  "id": 1,
+  "nome": "João Vitor Silva",
+  "email": "joao.vitor@email.com",
+  "loginUsername": "joao_vitor",
+  "tipoUsuario": "CLIENTE",
+  "dataUltimaAlteracao": "2026-04-17T10:30:00",
+  "endereco": {
+    "rua": "Rua das Flores",
+    "numero": "123",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01310-100"
+  }
+}
+    </div>
+    <h4>Response 409 Conflict (e-mail ou username já cadastrado)</h4>
+    <div class="code">
+{
+  "type": "https://api.gestao.com/erros/usuario-duplicado",
+  "title": "Usuário duplicado",
+  "status": 409,
+  "detail": "Email já cadastrado no sistema",
+  "instance": "/api/v1/usuarios",
+  "timestamp": "2026-04-17T10:30:00Z",
+  "fieldErrors": null
+}
     </div>
 
     <h2>Usuários - Listar</h2>
@@ -321,7 +367,30 @@ Response (DTOs)
         <strong>GET</strong> /usuarios?page=1&size=10<br>
         <strong>Descrição:</strong> Lista usuários com paginação<br>
         <strong>Params:</strong> page (default: 1), size (default: 10)<br>
-        <strong>Response:</strong> List&lt;Usuario&gt; - 200 OK
+        <strong>Status:</strong> 200 OK
+    </div>
+    <h4>Response 200 OK</h4>
+    <div class="code">
+[
+  {
+    "id": 1,
+    "nome": "João Vitor Silva",
+    "email": "joao.vitor@email.com",
+    "loginUsername": "joao_vitor",
+    "tipoUsuario": "CLIENTE",
+    "dataUltimaAlteracao": "2026-04-17T10:30:00",
+    "endereco": { "rua": "Rua das Flores", "numero": "123", "cidade": "São Paulo", "estado": "SP", "cep": "01310-100" }
+  },
+  {
+    "id": 2,
+    "nome": "Rafael Romanini",
+    "email": "rafael@email.com",
+    "loginUsername": "rafael_romanini",
+    "tipoUsuario": "DONO_RESTAURANTE",
+    "dataUltimaAlteracao": "2026-04-17T09:15:00",
+    "endereco": { "rua": "Av. Paulista", "numero": "500", "cidade": "São Paulo", "estado": "SP", "cep": "01310-100" }
+  }
+]
     </div>
 
     <h2>Usuários - Buscar por ID</h2>
@@ -334,27 +403,93 @@ Response (DTOs)
 
     <h2>Usuários - Buscar por Nome</h2>
     <div class="endpoint">
-        <strong>GET</strong> /usuarios/search/nome?nome=value<br>
+        <strong>GET</strong> /usuarios/search/nome?nome=João<br>
         <strong>Descrição:</strong> Busca usuários por nome (sem exposição de senha)<br>
-        <strong>Response:</strong> List&lt;UsuarioUpdateDTO&gt; - 200 OK
+        <strong>Status:</strong> 200 OK
+    </div>
+    <h4>Response 200 OK</h4>
+    <div class="code">
+[
+  {
+    "id": 1,
+    "nome": "João Vitor Silva",
+    "email": "joao.vitor@email.com",
+    "loginUsername": "joao_vitor",
+    "tipoUsuario": "CLIENTE",
+    "dataUltimaAlteracao": "2026-04-17T10:30:00",
+    "endereco": { "rua": "Rua das Flores", "numero": "123", "cidade": "São Paulo", "estado": "SP", "cep": "01310-100" }
+  }
+]
     </div>
 
     <h2>Usuários - Atualizar (sem senha)</h2>
     <div class="endpoint">
         <strong>PUT</strong> /usuarios/{id}<br>
         <strong>Descrição:</strong> Atualiza dados do usuário (não altera senha)<br>
-        <strong>Body:</strong> UsuarioUpdateDTO<br>
-        <strong>Response:</strong> Usuario - 200 OK<br>
-        <strong>Erros:</strong> 404 Not Found, 409 Conflict, 400 Bad Request
+        <strong>Status:</strong> 200 OK | 404 Not Found | 409 Conflict | 400 Bad Request
+    </div>
+    <h4>Request Body</h4>
+    <div class="code">
+{
+  "nome": "João Vitor Silva Atualizado",
+  "email": "joao.novo@email.com",
+  "loginUsername": "joao_novo",
+  "tipoUsuario": "DONO_RESTAURANTE",
+  "endereco": {
+    "rua": "Av. Paulista",
+    "numero": "1000",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01311-000"
+  }
+}
+    </div>
+    <h4>Response 200 OK</h4>
+    <div class="code">
+{
+  "id": 1,
+  "nome": "João Vitor Silva Atualizado",
+  "email": "joao.novo@email.com",
+  "loginUsername": "joao_novo",
+  "tipoUsuario": "DONO_RESTAURANTE",
+  "dataUltimaAlteracao": "2026-04-17T11:00:00",
+  "endereco": {
+    "rua": "Av. Paulista",
+    "numero": "1000",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01311-000"
+  }
+}
     </div>
 
     <h2>Usuários - Trocar Senha</h2>
     <div class="endpoint">
         <strong>PATCH</strong> /usuarios/{id}/senha<br>
         <strong>Descrição:</strong> Altera senha do usuário<br>
-        <strong>Body:</strong> TrocarSenhaRequestDTO<br>
-        <strong>Response:</strong> 204 No Content<br>
-        <strong>Erros:</strong> 404 Not Found, 400 Bad Request (senha incorreta)
+        <strong>Status:</strong> 204 No Content | 404 Not Found | 400 Bad Request
+    </div>
+    <h4>Request Body</h4>
+    <div class="code">
+{
+  "senhaAtual": "Senha@123",
+  "novaSenha": "NovaSenha@456",
+  "confirmacaoNovaSenha": "NovaSenha@456"
+}
+    </div>
+    <h4>Response 204 No Content</h4>
+    <p>Sem body de retorno. Operação realizada com sucesso.</p>
+    <h4>Response 400 Bad Request (senha atual incorreta)</h4>
+    <div class="code">
+{
+  "type": "https://api.gestao.com/erros/senha-incorreta",
+  "title": "Senha incorreta",
+  "status": 400,
+  "detail": "A senha atual informada está incorreta",
+  "instance": "/api/v1/usuarios/1/senha",
+  "timestamp": "2026-04-17T10:30:00Z",
+  "fieldErrors": null
+}
     </div>
 
     <h2>Usuários - Deletar</h2>
@@ -492,6 +627,71 @@ Response (DTOs)
   "fieldErrors": null
 }
     </div>
+
+    <h2>Trecho do Contrato OpenAPI</h2>
+    <h3>Info e SecurityScheme</h3>
+    <div class="code">
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Gestão API",
+    "version": "v1"
+  },
+  "servers": [{ "url": "/" }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
+    </div>
+
+    <h3>Operação documentada: POST /api/v1/usuarios</h3>
+    <div class="code">
+"/api/v1/usuarios": {
+  "post": {
+    "tags": ["Usuários"],
+    "summary": "Criar novo usuário",
+    "operationId": "criarUsuario",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": { "$ref": "#/components/schemas/UsuarioRequestDTO" }
+        }
+      }
+    },
+    "responses": {
+      "201": { "description": "Usuário criado com sucesso" },
+      "400": { "description": "Dados inválidos (ProblemDetail)" },
+      "409": { "description": "Email ou username já cadastrado (ProblemDetail)" }
+    }
+  }
+}
+    </div>
+
+    <h3>Anotações @Operation no Controller (Java)</h3>
+    <div class="code">
+@Operation(
+    summary = "Criar novo usuário",
+    description = "Cria um novo usuário. Email e loginUsername devem ser únicos.",
+    responses = {
+        @ApiResponse(responseCode = "201", description = "Usuário criado"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos",
+            content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class))),
+        @ApiResponse(responseCode = "409", description = "Email ou username duplicado",
+            content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    }
+)
+@PostMapping("/usuarios")
+public ResponseEntity&lt;Void&gt; criarUsuario(@Valid @RequestBody UsuarioRequestDTO dto) { ... }
+    </div>
+
+    <p>O contrato completo está disponível em: <strong>http://localhost:8080/v3/api-docs</strong></p>
 </div>
 
 <!-- SEÇÃO 6: POSTMAN -->
@@ -666,6 +866,80 @@ services:
       - '5432:5432'
     </div>
 
+    <h2>Variáveis de Ambiente</h2>
+    <p>Todas as variáveis configuradas no <code>compose.yaml</code> e no <code>application.properties</code>:</p>
+    <table>
+        <tr>
+            <th>Variável</th>
+            <th>Descrição</th>
+            <th>Valor padrão</th>
+            <th>Obrigatória</th>
+        </tr>
+        <tr>
+            <td>POSTGRES_DB</td>
+            <td>Nome do banco criado no container</td>
+            <td>mydatabase</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>POSTGRES_USER</td>
+            <td>Usuário dono do banco PostgreSQL</td>
+            <td>myuser</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>POSTGRES_PASSWORD</td>
+            <td>Senha do usuário PostgreSQL</td>
+            <td>secret</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>SPRING_DATASOURCE_URL</td>
+            <td>JDBC URL usada pelo Spring para conectar ao banco</td>
+            <td>jdbc:postgresql://localhost:5432/mydatabase</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>SPRING_DATASOURCE_USERNAME</td>
+            <td>Usuário JDBC (deve espelhar POSTGRES_USER)</td>
+            <td>myuser</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>SPRING_DATASOURCE_PASSWORD</td>
+            <td>Senha JDBC (deve espelhar POSTGRES_PASSWORD)</td>
+            <td>secret</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>JWT_SECRET</td>
+            <td>Segredo usado para assinar e validar tokens JWT</td>
+            <td>(definido no application.properties)</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td>SERVER_PORT</td>
+            <td>Porta HTTP em que a aplicação escuta</td>
+            <td>8080</td>
+            <td>❌</td>
+        </tr>
+    </table>
+
+    <h2>Arquivo .env (opcional)</h2>
+    <p>Para externalizar as variáveis sem alterar o <code>compose.yaml</code>, crie um arquivo <code>.env</code> na raiz do projeto:</p>
+    <div class="code">
+POSTGRES_DB=mydatabase
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=secret
+JWT_SECRET=troque-por-um-segredo-longo-e-aleatorio
+    </div>
+    <p>E referencie no compose com:</p>
+    <div class="code">
+services:
+  postgres:
+    env_file: .env
+    </div>
+
     <h2>Pré-requisitos</h2>
     <ul>
         <li>Docker 20.10+</li>
@@ -695,9 +969,62 @@ docker compose up -d
     <p>A aplicação inicia na porta 8080. Espere mensagens de sucesso.</p>
 
     <h3>Passo 4: Testar Endpoints</h3>
+    <p>Abra um novo terminal e execute os exemplos abaixo em sequência:</p>
+
+    <h4>4a. Autenticar e obter token JWT</h4>
     <div class="code">
-# Terminal novo
-curl -X GET http://localhost:8080/api/v1/usuarios
+curl -X POST http://localhost:8080/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "joao.vitor@email.com", "senha": "Senha@123"}'
+
+# Resposta esperada (200 OK):
+# { "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "email": "joao.vitor@email.com" }
+    </div>
+
+    <h4>4b. Criar um usuário</h4>
+    <div class="code">
+curl -X POST http://localhost:8080/api/v1/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "João Vitor Silva",
+    "email": "joao.vitor@email.com",
+    "loginUsername": "joao_vitor",
+    "senha": "Senha@123",
+    "tipoUsuario": "CLIENTE",
+    "endereco": {
+      "rua": "Rua das Flores",
+      "numero": "123",
+      "cidade": "São Paulo",
+      "estado": "SP",
+      "cep": "01310-100"
+    }
+  }'
+
+# Resposta esperada: 201 Created (sem body)
+    </div>
+
+    <h4>4c. Listar usuários (usando token)</h4>
+    <div class="code">
+# Substitua &lt;TOKEN&gt; pelo valor retornado no passo 4a
+curl -X GET "http://localhost:8080/api/v1/usuarios?page=1&size=10" \
+  -H "Authorization: Bearer &lt;TOKEN&gt;"
+
+# Resposta esperada (200 OK): lista paginada de usuários em JSON
+    </div>
+
+    <h4>4d. Trocar senha</h4>
+    <div class="code">
+# Substitua {id} pelo ID do usuário e &lt;TOKEN&gt; pelo token JWT
+curl -X PATCH http://localhost:8080/api/v1/usuarios/{id}/senha \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer &lt;TOKEN&gt;" \
+  -d '{
+    "senhaAtual": "Senha@123",
+    "novaSenha": "NovaSenha@456",
+    "confirmacaoNovaSenha": "NovaSenha@456"
+  }'
+
+# Resposta esperada: 204 No Content
     </div>
 
     <h3>Passo 5: Acessar Documentação</h3>
@@ -705,6 +1032,19 @@ curl -X GET http://localhost:8080/api/v1/usuarios
         <li>Swagger UI: http://localhost:8080/swagger-ui.html</li>
         <li>OpenAPI JSON: http://localhost:8080/v3/api-docs</li>
     </ul>
+
+    <h2>Verificação de Saúde</h2>
+    <p>Após subir os containers, verifique se tudo está funcionando:</p>
+    <div class="code">
+# Ver status dos containers (postgres_db deve aparecer como "running")
+docker compose ps
+
+# Acompanhar logs de inicialização do PostgreSQL
+docker compose logs -f postgres
+
+# Confirmar que a aplicação Spring Boot está aceitando conexões
+curl -s http://localhost:8080/api/v1/usuarios | head -c 200
+    </div>
 
     <h2>Parando a Aplicação</h2>
     <div class="code">
@@ -917,11 +1257,6 @@ docker compose down -v
         <li>Importe a coleção Postman para testes</li>
     </ol>
 
-    <h2>Contato e Suporte</h2>
-    <p><strong>Desenvolvedor:</strong> Wesley<br>
-    <strong>Email:</strong> wesley@email.com<br>
-    <strong>Instituição:</strong> FIAP<br>
-    <strong>Data:</strong> 17 de Abril de 2026</p>
 
     <h2>Referências</h2>
     <ul>
