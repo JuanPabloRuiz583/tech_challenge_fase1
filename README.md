@@ -589,10 +589,8 @@ Este projeto foi desenvolvido para a disciplina de Tech Challenge - FIAP.
 
 ## 👨‍💻 Desenvolvedor
 
-**Wesley de Andrade** - Tech Challenge Fase 1 - 2026
-**Juan Pablo Ruiz de Souza** - Tech Challenge Fase 1 - 2026
-**Rafael Romanini** - Tech Challenge Fase 1 - 2026
-** João Vitor Silva** - Tech Challenge Fase 1 - 2026
+**Wesley de Andrade** - **Juan Pablo Ruiz de Souza** - **Rafael Romanini** - **João Vitor Silva**
+
 ---
 
 ## 🔗 Links Úteis
