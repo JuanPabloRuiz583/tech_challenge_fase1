@@ -29,7 +29,7 @@ public class AuthService implements UserDetailsService {
         Usuario usuario = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CredenciaisInvalidasException("Email ou senha invalidos"));
 
-        if (!passwordEncoder.matches(senha, usuario.getPassword())) {
+        if (!passwordEncoder.matches(senha, usuario.getSenha())) {
             throw new CredenciaisInvalidasException("Email ou senha invalidos");
         }
 
