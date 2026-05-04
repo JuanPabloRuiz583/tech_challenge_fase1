@@ -189,7 +189,7 @@ Content-Type: application/json
 
 {
   "email": "usuario@email.com",
-  "senha": "SenhaForte123!"
+  "password": "SenhaForte123!"
 }
 ```
 
@@ -289,7 +289,7 @@ Content-Type: application/json
 
 {
   "email": "joao@email.com",
-  "senha": "SenhaSegura123!"
+  "password": "SenhaSegura123!"
 }
 ```
 
