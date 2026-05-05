@@ -210,7 +210,7 @@ jobs:
           - [x] SonarCloud analysis (coverage + vulnerabilities)
 
           ---
-          > _Automatically created by the BrekFood CI pipeline._"
+          > _Automatically created by the Tech Challenge CI pipeline._"
 
           # Check if develop branch exists
           echo "🔍 Checking if develop branch exists..."
